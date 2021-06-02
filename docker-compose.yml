@@ -1,0 +1,47 @@
+version: "3"
+
+services:
+  redis:
+    image: redis
+    hostname: redis
+    volumes:
+      - redisdata-redis:/redisdata
+    ports:
+      - 6379:6379
+
+  db:
+    image: git.vncdevs.io:5005/ipxchanges/xchange-timescaledb
+    hostname: db
+    user: postgres
+    environment:
+      PG_MODE: primary
+      PG_ROOT_PASSWORD: p@ssw0rd
+      PG_PRIMARY_PORT: 5432
+      PG_PRIMARY_USER: primaryuser
+      PG_PRIMARY_PASSWORD: p@ssw0rd
+      PG_USER: testuser
+      PG_PASSWORD: p@ssw0rd
+      PG_DATABASE: oe_dev
+    volumes:
+      - pgdata-db:/pgdata
+    ports:
+      - 5432:5432
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      RAILS_ENV: production
+      RAILS_DB_HOST: db
+      RAILS_DB_USER_NAME: postgres
+      RAILS_DB_PASSWORD: p@ssw0rd
+    command: bash -c "rm -f tmp/pids/server.pid && bundle exec rails s -p 3000 -b '0.0.0.0'"
+    ports:
+      - 3000:3000
+    depends_on:
+      - redis
+      - db
+volumes:
+  pgdata-db:
+  redisdata-redis:
